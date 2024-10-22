@@ -26,6 +26,9 @@ lives=3
 tim2=0
 obstacle_positions = [(100, 600), (300, 600), (500, 600)]
 
+sound1 = pygame.mixer.Sound("shoot.wav")
+sound2 = pygame.mixer.Sound("invaderkilled.wav")
+
 class Character(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -62,7 +65,7 @@ class Bullet(pygame.sprite.Sprite):
         self.x=character1.x + 14
 
     def update(self):
-        self.rect.y+=-3
+        self.rect.y+=-12
         screen.blit(self.image,(self.rect))
         if self.rect.y <-10:
             self.kill()
@@ -104,6 +107,7 @@ class Enemy(pygame.sprite.Sprite):
                 bullet.kill()
                 global score
                 score+=1
+                sound2.play()
         screen.blit(self.image,(self.rect))
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -140,6 +144,8 @@ class SpecialEnemy(pygame.sprite.Sprite):
 
 special_enemy_group = pygame.sprite.Group()
 special_enemy_timer = 0
+bgimg=pygame.image.load("spaceinvadebackground.png").convert()
+bgimg = pygame.transform.scale(bgimg, (700, 700)) 
 
 def spawn_special_enemy():
     special_enemy = SpecialEnemy()
@@ -173,6 +179,7 @@ while not done:
                     bullet=Bullet()
                     bullet_group.add(bullet)
                     tim2=0
+                    sound1.play()
         elif event.type == pygame.KEYUP:
             if (event.key == pygame.K_RIGHT and character1.x_speed == 3) or (event.key == pygame.K_LEFT and character1.x_speed == -3):
                 character1.x_speed = 0
@@ -198,6 +205,7 @@ while not done:
         if pygame.sprite.spritecollide(bullet, special_enemy_group, True):
             bullet.kill()
             score += 10
+            sound2.play()
     if tim == 80-minus:
         try:
             enemy = random.choice(enemy_group.sprites())
@@ -226,6 +234,7 @@ while not done:
             lives=0
     tim2+=1
     screen.fill(BLACK)
+    screen.blit(bgimg, [0, 0, 700,700])
     special_enemy_group.draw(screen)
     obstacle_group.draw(screen)
     obstacle_group.update()

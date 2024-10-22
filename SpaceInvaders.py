@@ -24,6 +24,7 @@ score=0
 minus=0
 lives=3
 tim2=0
+obstacle_positions = [(100, 600), (300, 600), (500, 600)]
 
 class Character(pygame.sprite.Sprite):
     def __init__(self):
@@ -104,11 +105,54 @@ class Enemy(pygame.sprite.Sprite):
                 global score
                 score+=1
         screen.blit(self.image,(self.rect))
+class Obstacle(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface([100, 30])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.health = 5
+
+    def damage(self):
+        self.health -= 1
+        if self.health <= 0:
+            self.kill()
+        elif self.health ==3 or self.health ==2:
+            self.image.fill((200, 200, 200))
+        elif self.health <= 1:
+            self.image.fill((100,100,100))
+class SpecialEnemy(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("extra.png").convert()
+        self.image.set_colorkey(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x = -50
+        self.rect.y = 50 
+        self.speed = 5
+
+    def update(self):
+        self.rect.x += self.speed
+        if self.rect.x > 700:
+            self.kill()
+
+special_enemy_group = pygame.sprite.Group()
+special_enemy_timer = 0
+
+def spawn_special_enemy():
+    special_enemy = SpecialEnemy()
+    special_enemy_group.add(special_enemy)
 
 character1 = Character()
 bullet2_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
+obstacle_group = pygame.sprite.Group()
+for pos in obstacle_positions:
+    obstacle = Obstacle(pos[0], pos[1])
+    obstacle_group.add(obstacle)
 
 for row in range(5):
     for col in range(10):
@@ -125,13 +169,36 @@ while not done:
             elif event.key == pygame.K_LEFT:
                 character1.x_speed =-3
             elif event.key == pygame.K_SPACE:
-                bullet=Bullet()
-                bullet_group.add(bullet)
+                if tim2>=30:
+                    bullet=Bullet()
+                    bullet_group.add(bullet)
+                    tim2=0
         elif event.type == pygame.KEYUP:
             if (event.key == pygame.K_RIGHT and character1.x_speed == 3) or (event.key == pygame.K_LEFT and character1.x_speed == -3):
                 character1.x_speed = 0
     tim+=1
-    if tim == 100-minus:
+    for bullet in bullet_group:
+        obstacle_hit_list = pygame.sprite.spritecollide(bullet, obstacle_group, False)
+        if obstacle_hit_list:
+            bullet.kill()
+            for obstacle in obstacle_hit_list:
+                obstacle.damage()
+    for bullet2 in bullet2_group:
+        obstacle_hit_list = pygame.sprite.spritecollide(bullet2, obstacle_group, False)
+        if obstacle_hit_list:
+            bullet2.kill()
+            for obstacle in obstacle_hit_list:
+                obstacle.damage()
+    special_enemy_timer += 1
+    if special_enemy_timer > random.randint(500, 1000):
+        spawn_special_enemy()
+        special_enemy_timer = 0
+    special_enemy_group.update()
+    for bullet in bullet_group:
+        if pygame.sprite.spritecollide(bullet, special_enemy_group, True):
+            bullet.kill()
+            score += 10
+    if tim == 80-minus:
         try:
             enemy = random.choice(enemy_group.sprites())
             bullet_enemy = Bulletenemy(enemy.rect.x+19, enemy.rect.y+32)
@@ -159,6 +226,9 @@ while not done:
             lives=0
     tim2+=1
     screen.fill(BLACK)
+    special_enemy_group.draw(screen)
+    obstacle_group.draw(screen)
+    obstacle_group.update()
     bullet_group.update()
     enemy_group.update()
     bullet2_group.update()
